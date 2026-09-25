@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Securing the Agent — Form-Filling Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --plum: #5b0462;
+    --plum-deep: #3d0342;
+    --indigo: #0a0539;
+    --navy: #282e6c;
+    --teal: #08a588;
+    --teal-deep: #056b57;
+    --gold: #f8b712;
+    --cream: #faf8f4;
+    --paper: #ffffff;
+    --ink: #1b1424;
+    --muted: #6a6275;
+    --line: #e6e0e8;
+    --draft: #b55400;
+    --draft-bg: #fdf1e4;
+
+    --font-sans: "Work Sans", "Segoe UI", system-ui, sans-serif;
+    --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); scroll-behavior: smooth; }
+  *, *::before, *::after { box-sizing: inherit; }
+
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: var(--font-serif);
+    font-size: 18px;
+    line-height: 1.65;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --cream: #17101d;
+      --paper: #1f1626;
+      --ink: #f2eef5;
+      --muted: #b4a9c2;
+      --line: #362a3f;
+      --draft-bg: #3a2412;
+    }
+  }
+  :root[data-theme="dark"] {
+    --cream: #17101d;
+    --paper: #1f1626;
+    --ink: #f2eef5;
+    --muted: #b4a9c2;
+    --line: #362a3f;
+    --draft-bg: #3a2412;
+  }
+
+  h1, h2, h3, .label { font-family: var(--font-sans); }
+
+  .wrap {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 0 28px;
+  }
+  @media (max-width: 560px) {
+    .wrap { padding: 0 20px; }
+    body { font-size: 16.5px; }
+  }
+
+  /* ---------- side rail nav ---------- */
+  .rail {
+    position: fixed;
+    top: 0; left: 0;
+    height: 100%;
+    width: 42px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 28px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    z-index: 40;
+  }
+  .rail button {
+    all: unset;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--line);
+    cursor: pointer;
+    transition: transform .2s ease, background .2s ease;
+  }
+  .rail button[aria-current="true"] {
+    background: var(--plum);
+    transform: scale(1.6);
+  }
+  @media (max-width: 720px) { .rail { display: none; } }
+
+  /* ---------- hero ---------- */
+  .hero {
+    position: relative;
+    min-height: 92vh;
+    display: flex;
+    align-items: flex-end;
+    background: linear-gradient(165deg, var(--indigo) 0%, var(--plum-deep) 62%, var(--plum) 100%);
+    color: #fbf7ff;
+    overflow: hidden;
+    padding-bottom: 64px;
+  }
+  .hero-pattern {
+    position: absolute; inset: 0;
+    opacity: .5;
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 2; }
+  .kicker {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .02em;
+    color: var(--gold);
+    margin: 0 0 18px;
+  }
+  .hero h1 {
+    font-size: clamp(2.2rem, 5.4vw, 3.6rem);
+    line-height: 1.08;
+    font-weight: 600;
+    margin: 0 0 20px;
+    max-width: 14ch;
+    letter-spacing: -0.01em;
+  }
+  .hero p.sub {
+    font-family: var(--font-serif);
+    font-size: 1.2rem;
+    color: #e3d9ef;
+    max-width: 46ch;
+    margin: 0 0 8px;
+  }
+  .hero .meta {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    color: #b8a7cc;
+    margin-top: 22px;
+  }
+
+  /* ---------- draft note ---------- */
+  .draft-note {
+    background: var(--draft-bg);
+    border-left: 3px solid var(--draft);
+    padding: 14px 18px;
+    margin: 8px 0 0;
+    border-radius: 0 6px 6px 0;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    color: var(--draft);
+  }
+  .draft-note strong { color: var(--draft); }
+  .flag {
+    display: inline-block;
+    font-family: var(--font-sans);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--draft);
+    background: var(--draft-bg);
+    border: 1px dashed var(--draft);
+    border-radius: 5px;
+    padding: 1px 7px;
+    margin-left: 6px;
+    white-space: nowrap;
+  }
+
+  /* ---------- sections ---------- */
+  section.beat {
+    padding: 84px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  section.beat:last-of-type { border-bottom: none; }
+
+  .eyebrow {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--teal-deep);
+    margin: 0 0 14px;
+  }
+  .beat h2 {
+    font-size: clamp(1.6rem, 3.4vw, 2.15rem);
+    font-weight: 600;
+    line-height: 1.18;
+    margin: 0 0 22px;
+    max-width: 20ch;
+    color: var(--plum);
+  }
+  :root[data-theme="dark"] .beat h2 {
+    color: #d7a6e8;
+  }
+  @media (prefers-color-scheme: dark) {
+    .beat h2 { color: #d7a6e8; }
+  }
+
+  .beat p { max-width: 62ch; color: var(--ink); }
+  .beat p.lede { font-size: 1.15rem; color: var(--muted); }
+
+  .diagram-box {
+    margin: 36px 0;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px 16px 8px;
+  }
+  .diagram-box svg { width: 100%; height: auto; display: block; }
+  .diagram-cap {
+    font-family: var(--font-sans);
+    font-size: 12.5px;
+    color: var(--muted);
+    text-align: center;
+    padding: 10px 6px 4px;
+  }
+
+  ul.points { list-style: none; margin: 26px 0; padding: 0; display: grid; gap: 16px; }
+  ul.points li {
+    position: relative;
+    padding-left: 22px;
+  }
+  ul.points li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--teal);
+  }
+  ul.points b { font-family: var(--font-sans); font-weight: 600; color: var(--ink); }
+
+  .quote {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 1.2rem;
+    color: var(--plum);
+    border-left: 3px solid var(--gold);
+    padding-left: 20px;
+    margin: 30px 0;
+    max-width: 56ch;
+  }
+
+  /* closing */
+  .closing {
+    background: var(--indigo);
+    color: #f2eef5;
+    padding: 90px 0 70px;
+  }
+  .closing h2 { color: var(--gold); max-width: none; }
+  .closing a { color: #cdeee7; }
+  .recap { list-style: none; padding: 0; margin: 30px 0 40px; display: grid; gap: 14px; }
+  .recap li {
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    padding-left: 26px;
+    position: relative;
+    color: #e3d9ef;
+  }
+  .recap li::before {
+    content: "";
+    position: absolute; left: 0; top: 7px;
+    width: 10px; height: 10px;
+    background: var(--teal);
+    border-radius: 2px;
+  }
+  .links {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    font-family: var(--font-sans); font-size: 14px;
+  }
+  .links a {
+    border: 1px solid #4a3d5c;
+    padding: 9px 16px;
+    border-radius: 999px;
+    text-decoration: none;
+    transition: background .15s ease, border-color .15s ease;
+  }
+  .links a:hover { background: rgba(255,255,255,.06); border-color: var(--teal); }
+
+  footer {
+    text-align: center;
+    font-family: var(--font-sans);
+    font-size: 12.5px;
+    color: var(--muted);
+    padding: 30px 0 40px;
+    background: var(--indigo);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .rail button { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="rail" id="rail" aria-label="Section navigation"></nav>
+
+<header class="hero" id="s-hero">
+  <svg class="hero-pattern" viewBox="0 0 800 500" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 380 C 140 320, 260 420, 400 360 S 660 300, 800 360 L 800 500 L 0 500 Z" fill="var(--plum)" opacity=".35"/>
+    <path d="M0 430 C 160 380, 300 460, 460 410 S 700 360, 800 410 L 800 500 L 0 500 Z" fill="var(--navy)" opacity=".5"/>
+    <path d="M0 460 C 180 430, 340 480, 500 450 S 720 420, 800 450 L 800 500 L 0 500 Z" fill="var(--teal)" opacity=".22"/>
+  </svg>
+  <div class="wrap">
+    <p class="kicker">Nava Labs · Lightning talk · 10 min</p>
+    <h1>Securing the agent that fills your forms</h1>
+    <p class="sub">Inside the security &amp; privacy architecture behind the Form-Filling Assistant — an agentic tool that helps caseworkers complete benefit applications for real families.</p>
+    <p class="meta">Built with Riverside County Children and Families Commission &amp; Amplifi · Evaluated by Georgetown's Better Government Lab · navapbc.com/labs</p>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="draft-note">
+      <strong>Source: Nava Labs, "Protecting personal data in AI-powered tools."</strong> Every detail below is
+      pulled from the published case study on the Form-Filling Assistant's security &amp; privacy architecture —
+      built in partnership with the Riverside County Children and Families Commission and Amplifi, with evaluation
+      support from Georgetown's Better Government Lab.
+    </div>
+  </div>
+
+  <section class="beat" id="s-context">
+    <div class="wrap">
+      <p class="eyebrow">Why this talk</p>
+      <h2>An agent with real access to real people's data</h2>
+      <p class="lede">Form-Filling Assistant reads case records and fills out benefit applications across real
+      government portals, then hands a caseworker a completed draft to review and submit. That's the whole
+      value — and the whole risk surface.</p>
+      <p>Across a six-month pilot, that combination held: <b>zero</b> privacy or security incidents, and
+      <b>67%</b> of caseworkers said they trust the tool most or all of the time. Here's the framework behind
+      that record — four layers, in the order the agent actually encounters them.</p>
+      <ul class="points">
+        <li><b>No retention</b> — the model reads client data, it never stores it.</li>
+        <li><b>Isolation</b> — every session runs in its own contained browser environment.</li>
+        <li><b>No submit path</b> — the agent can fill a form; it structurally cannot send it.</li>
+        <li><b>Caseworker control</b> — a person watches, can take over, and reviews every field.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="beat" id="s-access">
+    <div class="wrap">
+      <p class="eyebrow">01 · Model &amp; data retention</p>
+      <h2>The model sees it — it never keeps it</h2>
+      <p>Our original build and testing ran on Claude Sonnet 4.6, called through Google Cloud's Gemini Enterprise
+      routing layer instead of a direct API connection. That routing choice is what rules out retention on the
+      provider side: a field like a name, a birth date, or a Social Security number gets read for exactly as long
+      as it takes to drop it into the form, then it's gone. Nobody downstream — not Anthropic, not Google — ends
+      up holding a copy or feeding it into a future model.</p>
+    </div>
+    <div class="wrap">
+      <div class="diagram-box">
+        <svg viewBox="0 0 680 200" role="img" aria-label="Diagram of a case record flowing through Google Cloud Gemini Enterprise, which enforces no data retention, into Claude Sonnet 4.6, which reads a field and writes it once with nothing kept afterward">
+          <g font-family="var(--font-sans)" font-size="12">
+            <rect x="10" y="66" width="130" height="68" rx="9" fill="var(--paper)" stroke="var(--line)" stroke-width="1.5"/>
+            <text x="75" y="92" text-anchor="middle" fill="var(--ink)" font-weight="600">Case record</text>
+            <text x="75" y="108" text-anchor="middle" fill="var(--muted)" font-size="10.5">name · DOB · SSN</text>
+
+            <rect x="180" y="58" width="160" height="84" rx="9" fill="var(--paper)" stroke="var(--gold)" stroke-width="1.5"/>
+            <text x="260" y="84" text-anchor="middle" fill="var(--ink)" font-weight="600">Gemini Enterprise</text>
+            <text x="260" y="100" text-anchor="middle" fill="var(--muted)" font-size="10.5">Google Cloud LLM routing</text>
+            <text x="260" y="115" text-anchor="middle" fill="var(--muted)" font-size="10.5">no retention · enforced</text>
+
+            <rect x="380" y="66" width="150" height="68" rx="9" fill="var(--plum)"/>
+            <text x="455" y="92" text-anchor="middle" fill="#fff" font-weight="600">Claude Sonnet 4.6</text>
+            <text x="455" y="108" text-anchor="middle" fill="#e3d9ef" font-size="10.5">reads field, forgets it</text>
+
+            <rect x="570" y="66" width="100" height="68" rx="9" fill="var(--paper)" stroke="var(--teal)" stroke-width="1.5"/>
+            <text x="620" y="92" text-anchor="middle" fill="var(--ink)" font-weight="600" font-size="11.5">Form field</text>
+            <text x="620" y="108" text-anchor="middle" fill="var(--muted)" font-size="10">written once</text>
+          </g>
+          <g stroke="var(--muted)" stroke-width="1.4" fill="none" marker-end="url(#arrow)">
+            <path d="M140 100 L178 100"/>
+            <path d="M340 100 L378 100"/>
+            <path d="M530 100 L568 100"/>
+          </g>
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/>
+            </marker>
+          </defs>
+          <text x="340" y="175" text-anchor="middle" font-family="var(--font-sans)" font-size="11" fill="var(--muted)">no copy retained · no training on client data</text>
+        </svg>
+        <p class="diagram-cap">Fig. 1 — every field passes through once. Nothing about the client is kept on either provider's side.</p>
+      </div>
+    </div>
+    <div class="wrap">
+      <ul class="points">
+        <li><b>One field at a time</b> — the model only ever sees what it's currently populating, not the whole record.</li>
+        <li><b>Gemini Enterprise routing</b> — every call passes through Google's management layer, configured to drop the data after, not log it.</li>
+        <li><b>No training loop</b> — client data never becomes part of a future model version, on either provider's side.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="beat" id="s-data">
+    <div class="wrap">
+      <p class="eyebrow">02 · Session isolation</p>
+      <h2>No two sessions ever touch</h2>
+      <p>Instead of running locally on a caseworker's machine, the tool spins up a fresh Chrome instance in the
+      cloud for every session, hosted by Kernel — a browser provider with a SOC 2 Type II attestation. Each of
+      those sessions lives in its own virtual machine with nothing shared between them, so there's no route for
+      one client's data to end up in someone else's session.</p>
+      <p>That single browser instance does double duty: Playwright drives it on the agent's side over Chrome's
+      DevTools Protocol, while a live-view iframe mirrors the exact same screen into the caseworker's chat window
+      as it happens.</p>
+    </div>
+    <div class="wrap">
+      <div class="diagram-box">
+        <svg viewBox="0 0 680 260" role="img" aria-label="Diagram of a cloud browser session with two connections: an agent path that creates and drives the browser via Playwright and Chrome DevTools Protocol, and a caseworker path that watches the same session live through an embedded iframe">
+          <rect x="10" y="10" width="660" height="38" rx="8" fill="var(--plum)"/>
+          <text x="340" y="34" text-anchor="middle" font-family="var(--font-sans)" font-size="12.5" font-weight="600" fill="#fff">Cloud browser — Kernel, SOC 2 Type II, isolated VM per session</text>
+
+          <rect x="10" y="64" width="320" height="186" rx="10" fill="var(--paper)" stroke="var(--teal)" stroke-width="1.5"/>
+          <text x="30" y="90" font-family="var(--font-sans)" font-size="13" font-weight="600" fill="var(--ink)">Agent path</text>
+          <text x="30" y="114" font-family="var(--font-sans)" font-size="11.5" fill="var(--teal-deep)">kernel.browsers.create()</text>
+          <text x="30" y="129" font-family="var(--font-sans)" font-size="10.5" fill="var(--muted)">Create browser</text>
+          <text x="30" y="151" font-family="var(--font-sans)" font-size="11.5" fill="var(--teal-deep)">cdp_ws_url</text>
+          <text x="30" y="166" font-family="var(--font-sans)" font-size="10.5" fill="var(--muted)">Playwright connects via CDP</text>
+          <text x="30" y="188" font-family="var(--font-sans)" font-size="11.5" fill="var(--teal-deep)">executeCommand()</text>
+          <text x="30" y="203" font-family="var(--font-sans)" font-size="10.5" fill="var(--muted)">fill / click / type / snapshot</text>
+          <text x="30" y="225" font-family="var(--font-sans)" font-size="11.5" fill="var(--teal-deep)">{ success, output }</text>
+          <text x="30" y="240" font-family="var(--font-sans)" font-size="10.5" fill="var(--muted)">Structured response</text>
+
+          <rect x="350" y="64" width="320" height="186" rx="10" fill="var(--paper)" stroke="var(--gold)" stroke-width="1.5"/>
+          <text x="370" y="90" font-family="var(--font-sans)" font-size="13" font-weight="600" fill="var(--ink)">Caseworker path</text>
+          <text x="370" y="114" font-family="var(--font-sans)" font-size="11.5" fill="#a67c00">browser_live_view_url</text>
+          <text x="370" y="129" font-family="var(--font-sans)" font-size="10.5" fill="var(--muted)">Live-view URL returned</text>
+          <text x="370" y="151" font-family="var(--font-sans)" font-size="11.5" fill="#a67c00">&lt;iframe&gt;</text>
+          <text x="370" y="166" font-family="var(--font-sans)" font-size="10.5" fill="var(--muted)">Embedded in chat UI</text>
+          <text x="370" y="188" font-family="var(--font-sans)" font-size="11.5" fill="#a67c00">real-time</text>
+          <text x="370" y="203" font-family="var(--font-sans)" font-size="10.5" fill="var(--muted)">Watches every click and fill</text>
+          <text x="370" y="225" font-family="var(--font-sans)" font-size="11.5" fill="#a67c00">keepalive</text>
+          <text x="370" y="240" font-family="var(--font-sans)" font-size="10.5" fill="var(--muted)">iframe IS the keepalive</text>
+        </svg>
+        <p class="diagram-cap">Fig. 2 — one browser session, two connections: Playwright drives it, a live iframe lets the caseworker watch every click as it happens.</p>
+      </div>
+    </div>
+    <div class="wrap">
+      <ul class="points">
+        <li><b>Dedicated VMs</b> — Kernel spins up a fresh virtual machine per session, with no shared memory or storage across them.</li>
+        <li><b>FedRAMP High hosting</b> — the app itself runs on Google Cloud Platform (Cloud Run, Cloud SQL), held
+        to the federal bar for the most sensitive unclassified government data.</li>
+        <li><b>One screen, two viewers</b> — the agent operates it, the caseworker watches the same feed live.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="beat" id="s-injection">
+    <div class="wrap">
+      <p class="eyebrow">03 · No submit path</p>
+      <h2>There's no button for the agent to press</h2>
+      <p>We didn't want one safeguard carrying all the weight, so an unauthorized submission has to get past
+      three independent ones before it could ever happen — and any single one of them failing still isn't enough
+      on its own.</p>
+    </div>
+    <div class="wrap">
+      <div class="diagram-box">
+        <svg viewBox="0 0 680 220" role="img" aria-label="Diagram of three safeguards against unauthorized submission: system prompt instructions, no submit function, and a read-only caseworker view, all feeding into a state with no path to submission, with submission only reachable through a caseworker action">
+          <g font-family="var(--font-sans)" font-size="12">
+            <rect x="10" y="14" width="200" height="86" rx="9" fill="var(--paper)" stroke="var(--line)" stroke-width="1.5"/>
+            <text x="110" y="40" text-anchor="middle" fill="var(--ink)" font-weight="600">1 · Instructions</text>
+            <text x="110" y="60" text-anchor="middle" fill="var(--muted)" font-size="10.5">Foundational prompt says</text>
+            <text x="110" y="75" text-anchor="middle" fill="var(--muted)" font-size="10.5">"never click submit"</text>
+
+            <rect x="240" y="14" width="200" height="86" rx="9" fill="var(--paper)" stroke="var(--gold)" stroke-width="1.5"/>
+            <text x="340" y="40" text-anchor="middle" fill="var(--ink)" font-weight="600">2 · No function</text>
+            <text x="340" y="60" text-anchor="middle" fill="var(--muted)" font-size="10.5">Tool has no submit action —</text>
+            <text x="340" y="75" text-anchor="middle" fill="var(--muted)" font-size="10.5">it produces a review summary</text>
+
+            <rect x="470" y="14" width="200" height="86" rx="9" fill="var(--paper)" stroke="var(--navy)" stroke-width="1.5"/>
+            <text x="570" y="40" text-anchor="middle" fill="var(--ink)" font-weight="600">3 · Read-only view</text>
+            <text x="570" y="60" text-anchor="middle" fill="var(--muted)" font-size="10.5">Locked until the caseworker</text>
+            <text x="570" y="75" text-anchor="middle" fill="var(--muted)" font-size="10.5">clicks "take control"</text>
+
+            <rect x="150" y="140" width="300" height="56" rx="10" fill="var(--plum)"/>
+            <text x="300" y="164" text-anchor="middle" fill="#fff" font-weight="600" font-size="12.5">No path to an unauthorized</text>
+            <text x="300" y="182" text-anchor="middle" fill="#e3d9ef" font-size="11">submission</text>
+
+            <rect x="500" y="140" width="170" height="56" rx="10" fill="var(--paper)" stroke="var(--teal)" stroke-width="1.5"/>
+            <text x="585" y="164" text-anchor="middle" fill="var(--teal-deep)" font-weight="600" font-size="12">Caseworker</text>
+            <text x="585" y="182" text-anchor="middle" fill="var(--muted)" font-size="10.5">clicks submit</text>
+          </g>
+          <g stroke="var(--muted)" stroke-width="1.4" fill="none" marker-end="url(#arrow3)">
+            <path d="M110 100 C 130 118, 200 128, 260 138"/>
+            <path d="M340 100 L 320 138"/>
+            <path d="M570 100 C 500 122, 440 130, 380 138"/>
+            <path d="M452 168 L 498 168" stroke-dasharray="4 4"/>
+          </g>
+          <defs>
+            <marker id="arrow3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/>
+            </marker>
+          </defs>
+        </svg>
+        <p class="diagram-cap">Fig. 3 — three independent safeguards, none of which the agent controls. The only path forward is a caseworker's own click.</p>
+      </div>
+    </div>
+    <div class="wrap">
+      <ul class="points">
+        <li><b>System-prompt guardrail</b> — the model's core instructions rule out ever clicking a submit control.</li>
+        <li><b>Nothing to call</b> — there's no submit action in the tool's function set; finishing a form just produces a summary for review.</li>
+        <li><b>Locked by default</b> — the caseworker's browser view stays read-only until they explicitly take control.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="beat" id="s-oversight">
+    <div class="wrap">
+      <p class="eyebrow">04 · Human oversight</p>
+      <h2>The caseworker can take the wheel anytime</h2>
+      <p>At any moment, a caseworker can step in mid-session. One click on "take control" halts the agent and
+      whatever it was mid-way through doing; a click on "give back control" hands the browser back — the agent
+      re-orients with a fresh screenshot and picks up from wherever the caseworker left things.</p>
+    </div>
+    <div class="wrap">
+      <div class="diagram-box">
+        <svg viewBox="0 0 680 320" role="img" aria-label="Diagram of a four-state control cycle: agent mode where the agent controls the browser and the caseworker watches, take control which aborts the agent and unlocks the browser, user mode where the caseworker has full control, and give back control which hands control back to the agent">
+          <line x1="40" y1="30" x2="640" y2="30" stroke="var(--muted)" stroke-width="1.4" marker-end="url(#arrow4)"/>
+          <rect x="270" y="12" width="140" height="34" rx="17" fill="var(--plum)"/>
+          <text x="340" y="34" text-anchor="middle" font-family="var(--font-sans)" font-size="12" font-weight="600" fill="#fff">Take control</text>
+
+          <g font-family="var(--font-sans)">
+            <rect x="20" y="60" width="300" height="94" rx="10" fill="var(--paper)" stroke="var(--line)" stroke-width="1.5"/>
+            <text x="40" y="86" font-size="13" font-weight="600" fill="var(--ink)">Agent mode</text>
+            <text x="40" y="105" font-size="10.5" fill="var(--muted)">Agent controls the browser. Caseworker watches.</text>
+            <text x="40" y="121" font-size="10.5" fill="var(--muted)">pointer-events: none · readOnly = true</text>
+            <text x="40" y="137" font-size="10.5" fill="var(--muted)">iframe visible but locked</text>
+
+            <rect x="360" y="60" width="300" height="94" rx="10" fill="var(--paper)" stroke="var(--teal)" stroke-width="1.5"/>
+            <text x="380" y="86" font-size="13" font-weight="600" fill="var(--ink)">Take control</text>
+            <text x="380" y="105" font-size="10.5" fill="var(--muted)">Abort the agent, unlock the browser.</text>
+            <text x="380" y="121" font-size="10.5" fill="var(--muted)">stop() aborts the stream</text>
+            <text x="380" y="137" font-size="10.5" fill="var(--muted)">In-flight commands reject cleanly</text>
+
+            <rect x="20" y="174" width="300" height="94" rx="10" fill="var(--paper)" stroke="var(--gold)" stroke-width="1.5"/>
+            <text x="40" y="200" font-size="13" font-weight="600" fill="var(--ink)">Give back control</text>
+            <text x="40" y="219" font-size="10.5" fill="var(--muted)">Caseworker hands back to the agent.</text>
+            <text x="40" y="235" font-size="10.5" fill="var(--muted)">Agent takes a fresh snapshot, continues.</text>
+
+            <rect x="360" y="174" width="300" height="94" rx="10" fill="var(--paper)" stroke="var(--draft)" stroke-width="1.5"/>
+            <text x="380" y="200" font-size="13" font-weight="600" fill="var(--ink)">User mode</text>
+            <text x="380" y="219" font-size="10.5" fill="var(--muted)">Caseworker has full control. Agent is paused.</text>
+            <text x="380" y="235" font-size="10.5" fill="var(--muted)">pointer-events: auto · mouse + keyboard enabled</text>
+          </g>
+
+          <rect x="260" y="278" width="160" height="34" rx="17" fill="var(--paper)" stroke="var(--line)" stroke-width="1.5"/>
+          <text x="340" y="300" text-anchor="middle" font-family="var(--font-sans)" font-size="12" font-weight="600" fill="var(--ink)">Give back control</text>
+          <line x1="640" y1="292" x2="40" y2="292" stroke="var(--muted)" stroke-width="1.4" marker-end="url(#arrow4)"/>
+
+          <defs>
+            <marker id="arrow4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/>
+            </marker>
+          </defs>
+        </svg>
+        <p class="diagram-cap">Fig. 4 — the caseworker can move between agent mode and full manual control as many times as needed, in either direction.</p>
+      </div>
+    </div>
+    <div class="wrap">
+      <div class="quote">"That would be nice. I know we always talk about having to input the data again. This would save so much time for all of us." — Caseworker in California</div>
+      <ul class="points">
+        <li><b>Take control / give back control</b> — either click instantly pauses or resumes the agent; nothing is lost mid-step.</li>
+        <li><b>Review card</b> — every field is labeled by source: pulled from the case management system, entered manually, or auto-filled with an explanation the caseworker can check.</li>
+        <li><b>Direct edits</b> — caseworkers can correct any field in the review card without ever touching "take control."</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="beat" id="s-model-update">
+    <div class="wrap">
+      <p class="eyebrow">Since the pilot</p>
+      <h2>Newer models, held to the same rules</h2>
+      <p>Everything above is what we validated a few months back, running on Claude Sonnet 4.6 — and those
+      guarantees haven't changed. What has changed is which model sits underneath. We've since moved to newer
+      releases, and we've layered in Vercel's Eve as an execution harness around the agent.</p>
+      <p>Newer models are more capable, but also more willing to improvise. Eve's job is to keep that improvisation
+      in check: it catches malformed tool calls, retries steps that fail cleanly instead of letting the agent
+      guess, and keeps a more autonomous model anchored to the same system-prompt guidance the original build was
+      designed around, rather than letting it wander off-script.</p>
+      <ul class="points">
+        <li><b>Model upgrade, same guarantees</b> — we've moved past Sonnet 4.6, and the no-retention, no-training behavior carries forward.</li>
+        <li><b>Vercel's Eve</b> — an execution harness that adds structured error handling and retry logic around every model call.</li>
+        <li><b>Same instructions, tighter leash</b> — Eve keeps a newer, more capable model tracking the original prompt guidance instead of freelancing.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="beat" id="s-together">
+    <div class="wrap">
+      <p class="eyebrow">Bringing it together</p>
+      <h2>Defense in depth, around one task</h2>
+      <p>Some of these layers come from the providers behind the tool: Claude processes client data without
+      storing or training on it, Google Cloud Gemini Enterprise hosts it without routing data to outside servers,
+      Kernel isolates every session, and Google Cloud's FedRAMP High infrastructure holds it to the federal
+      standard for sensitive data. Nava Labs added the rest: instructions that block submission, an interface
+      that keeps the caseworker in control, and a review card that traces every field back to its source.</p>
+    </div>
+    <div class="wrap">
+      <div class="diagram-box">
+        <svg viewBox="0 0 500 400" role="img" aria-label="Concentric diagram showing the task at the center, surrounded by rings for session isolation, no data retention, no submit path, and human oversight as the outermost layer">
+          <circle cx="250" cy="200" r="185" fill="none" stroke="var(--teal)" stroke-width="1.6" opacity=".8"/>
+          <circle cx="250" cy="200" r="140" fill="none" stroke="var(--gold)" stroke-width="1.6" opacity=".85"/>
+          <circle cx="250" cy="200" r="95" fill="none" stroke="var(--navy)" stroke-width="1.6" opacity=".9"/>
+          <circle cx="250" cy="200" r="50" fill="var(--plum)"/>
+          <text x="250" y="196" text-anchor="middle" fill="#fff" font-family="var(--font-sans)" font-weight="600" font-size="12">Task:</text>
+          <text x="250" y="212" text-anchor="middle" fill="#e3d9ef" font-family="var(--font-sans)" font-size="10.5">complete the form</text>
+
+          <text x="250" y="82" text-anchor="middle" fill="var(--navy)" font-family="var(--font-sans)" font-weight="600" font-size="12">No data retention</text>
+          <text x="250" y="38" text-anchor="middle" fill="var(--ink)" font-family="var(--font-sans)" font-weight="600" font-size="12">No submit path</text>
+          <text x="250" y="382" text-anchor="middle" fill="var(--teal-deep)" font-family="var(--font-sans)" font-weight="600" font-size="12">Human oversight</text>
+          <text x="250" y="128" text-anchor="middle" fill="var(--gold)" font-family="var(--font-sans)" font-weight="700" font-size="11" opacity=".95">session isolation</text>
+        </svg>
+        <p class="diagram-cap">Fig. 5 — every layer sits between the model and a real-world effect on someone's application.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="closing" id="s-close">
+    <div class="wrap">
+      <p class="eyebrow" style="color:#cdeee7;">Wrap-up</p>
+      <h2>Four practices, in one sentence each</h2>
+      <ul class="recap">
+        <li>The model processes personal data — it never stores or trains on it.</li>
+        <li>Every session runs in its own isolated, FedRAMP High-grade environment.</li>
+        <li>The agent has no way to submit a form — only to prepare it for review.</li>
+        <li>A caseworker watches, can take over anytime, and reviews every field's source.</li>
+      </ul>
+      <p style="font-family: var(--font-sans); font-size: 14px; color: #cdeee7; margin: -8px 0 28px;">
+        Result: 0 privacy or security incidents and 67% caseworker trust across a six-month pilot with Riverside County.
+      </p>
+      <div class="links">
+        <a href="https://github.com/navapbc/labs-form-filling-assistant">GitHub repo ↗</a>
+        <a href="https://www.navapbc.com/toolkits/adapt-agentic-ai-caseworkers">Toolkit: adapting agentic AI for caseworkers ↗</a>
+        <a href="https://www.navapbc.com/labs/caseworker-ai-tools/form-filling-assistant">Project page ↗</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>Nava Labs · Caseworker Empowerment Toolkit · questions: labs@navapbc.com</footer>
+
+<script>
+(function() {
+  var sections = Array.from(document.querySelectorAll('main section.beat, header.hero, section.closing'));
+  var rail = document.getElementById('rail');
+  var buttons = [];
+
+  sections.forEach(function(sec) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Jump to section');
+    btn.addEventListener('click', function() {
+      sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    rail.appendChild(btn);
+    buttons.push({ sec: sec, btn: btn });
+  });
+
+  var io = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      var match = buttons.find(function(b) { return b.sec === entry.target; });
+      if (!match) return;
+      if (entry.isIntersecting) {
+        buttons.forEach(function(b) { b.btn.removeAttribute('aria-current'); });
+        match.btn.setAttribute('aria-current', 'true');
+      }
+    });
+  }, { threshold: 0.5 });
+
+  sections.forEach(function(s) { io.observe(s); });
+})();
+</script>
+
+</body>
+</html>
