@@ -316,7 +316,7 @@
     <path d="M0 460 C 180 430, 340 480, 500 450 S 720 420, 800 450 L 800 500 L 0 500 Z" fill="var(--teal)" opacity=".22"/>
   </svg>
   <div class="wrap">
-    <p class="kicker">Nava Labs · Lightning talk · 10 min</p>
+    <p class="kicker">Nava Labs · Lightning talk · 6 min</p>
     <h1>Securing the agent that fills your forms</h1>
     <p class="sub">Inside the security &amp; privacy architecture behind the Form-Filling Assistant — an agentic tool that helps caseworkers complete benefit applications for real families.</p>
     <p class="meta">Built with Riverside County Children and Families Commission &amp; Amplifi · Evaluated by Georgetown's Better Government Lab · navapbc.com/labs</p>
@@ -340,9 +340,8 @@
       <p class="lede">Form-Filling Assistant reads case records and fills out benefit applications across real
       government portals, then hands a caseworker a completed draft to review and submit. That's the whole
       value — and the whole risk surface.</p>
-      <p>Across a six-month pilot, that combination held: <b>zero</b> privacy or security incidents, and
-      <b>67%</b> of caseworkers said they trust the tool most or all of the time. Here's the framework behind
-      that record — four layers, in the order the agent actually encounters them.</p>
+      <p>Across a six-month pilot: <b>zero</b> privacy or security incidents, and <b>67%</b> of caseworkers said
+      they trust the tool most or all of the time. Four layers got us there.</p>
       <ul class="points">
         <li><b>No retention</b> — the model reads client data, it never stores it.</li>
         <li><b>Isolation</b> — every session runs in its own contained browser environment.</li>
@@ -356,11 +355,10 @@
     <div class="wrap">
       <p class="eyebrow">01 · Model &amp; data retention</p>
       <h2>The model sees it — it never keeps it</h2>
-      <p>Our original build and testing ran on Claude Sonnet 4.6, called through Google Cloud's Gemini Enterprise
-      routing layer instead of a direct API connection. That routing choice is what rules out retention on the
-      provider side: a field like a name, a birth date, or a Social Security number gets read for exactly as long
-      as it takes to drop it into the form, then it's gone. Nobody downstream — not Anthropic, not Google — ends
-      up holding a copy or feeding it into a future model.</p>
+      <p>The model is called through Google Cloud's Gemini Enterprise routing layer instead of a direct API
+      connection — that routing is what rules out retention. A field like a name, a birth date, or a Social
+      Security number gets read only as long as it takes to drop into the form, then it's gone. No one
+      downstream keeps a copy or trains on it.</p>
     </div>
     <div class="wrap">
       <div class="diagram-box">
@@ -402,7 +400,6 @@
       <ul class="points">
         <li><b>One field at a time</b> — the model only ever sees what it's currently populating, not the whole record.</li>
         <li><b>Gemini Enterprise routing</b> — every call passes through Google's management layer, configured to drop the data after, not log it.</li>
-        <li><b>No training loop</b> — client data never becomes part of a future model version, on either provider's side.</li>
       </ul>
     </div>
   </section>
@@ -411,13 +408,11 @@
     <div class="wrap">
       <p class="eyebrow">02 · Session isolation</p>
       <h2>No two sessions ever touch</h2>
-      <p>Instead of running locally on a caseworker's machine, the tool spins up a fresh Chrome instance in the
-      cloud for every session, hosted by Kernel — a browser provider with a SOC 2 Type II attestation. Each of
-      those sessions lives in its own virtual machine with nothing shared between them, so there's no route for
-      one client's data to end up in someone else's session.</p>
-      <p>That single browser instance does double duty: Playwright drives it on the agent's side over Chrome's
-      DevTools Protocol, while a live-view iframe mirrors the exact same screen into the caseworker's chat window
-      as it happens.</p>
+      <p>Instead of running locally, the tool spins up a fresh Chrome instance in the cloud for every session,
+      hosted by Kernel (SOC 2 Type II certified) inside Google Cloud's FedRAMP High infrastructure — one isolated
+      VM per session, nothing shared between them. That single browser serves two connections at once: Playwright
+      drives it on the agent's side, while a live-view iframe mirrors the same screen for the caseworker in real
+      time.</p>
     </div>
     <div class="wrap">
       <div class="diagram-box">
@@ -453,8 +448,6 @@
     <div class="wrap">
       <ul class="points">
         <li><b>Dedicated VMs</b> — Kernel spins up a fresh virtual machine per session, with no shared memory or storage across them.</li>
-        <li><b>FedRAMP High hosting</b> — the app itself runs on Google Cloud Platform (Cloud Run, Cloud SQL), held
-        to the federal bar for the most sensitive unclassified government data.</li>
         <li><b>One screen, two viewers</b> — the agent operates it, the caseworker watches the same feed live.</li>
       </ul>
     </div>
@@ -514,7 +507,6 @@
       <ul class="points">
         <li><b>System-prompt guardrail</b> — the model's core instructions rule out ever clicking a submit control.</li>
         <li><b>Nothing to call</b> — there's no submit action in the tool's function set; finishing a form just produces a summary for review.</li>
-        <li><b>Locked by default</b> — the caseworker's browser view stays read-only until they explicitly take control.</li>
       </ul>
     </div>
   </section>
@@ -576,7 +568,6 @@
       <ul class="points">
         <li><b>Take control / give back control</b> — either click instantly pauses or resumes the agent; nothing is lost mid-step.</li>
         <li><b>Review card</b> — every field is labeled by source: pulled from the case management system, entered manually, or auto-filled with an explanation the caseworker can check.</li>
-        <li><b>Direct edits</b> — caseworkers can correct any field in the review card without ever touching "take control."</li>
       </ul>
     </div>
   </section>
@@ -585,48 +576,10 @@
     <div class="wrap">
       <p class="eyebrow">Since the pilot</p>
       <h2>Newer models, held to the same rules</h2>
-      <p>Everything above is what we validated a few months back, running on Claude Sonnet 4.6 — and those
-      guarantees haven't changed. What has changed is which model sits underneath. We've since moved to newer
-      releases, and we've layered in Vercel's Eve as an execution harness around the agent.</p>
-      <p>Newer models are more capable, but also more willing to improvise. Eve's job is to keep that improvisation
-      in check: it catches malformed tool calls, retries steps that fail cleanly instead of letting the agent
-      guess, and keeps a more autonomous model anchored to the same system-prompt guidance the original build was
-      designed around, rather than letting it wander off-script.</p>
-      <ul class="points">
-        <li><b>Model upgrade, same guarantees</b> — we've moved past Sonnet 4.6, and the no-retention, no-training behavior carries forward.</li>
-        <li><b>Vercel's Eve</b> — an execution harness that adds structured error handling and retry logic around every model call.</li>
-        <li><b>Same instructions, tighter leash</b> — Eve keeps a newer, more capable model tracking the original prompt guidance instead of freelancing.</li>
-      </ul>
-    </div>
-  </section>
-
-  <section class="beat" id="s-together">
-    <div class="wrap">
-      <p class="eyebrow">Bringing it together</p>
-      <h2>Defense in depth, around one task</h2>
-      <p>Some of these layers come from the providers behind the tool: Claude processes client data without
-      storing or training on it, Google Cloud Gemini Enterprise hosts it without routing data to outside servers,
-      Kernel isolates every session, and Google Cloud's FedRAMP High infrastructure holds it to the federal
-      standard for sensitive data. Nava Labs added the rest: instructions that block submission, an interface
-      that keeps the caseworker in control, and a review card that traces every field back to its source.</p>
-    </div>
-    <div class="wrap">
-      <div class="diagram-box">
-        <svg viewBox="0 0 500 400" role="img" aria-label="Concentric diagram showing the task at the center, surrounded by rings for session isolation, no data retention, no submit path, and human oversight as the outermost layer">
-          <circle cx="250" cy="200" r="185" fill="none" stroke="var(--teal)" stroke-width="1.6" opacity=".8"/>
-          <circle cx="250" cy="200" r="140" fill="none" stroke="var(--gold)" stroke-width="1.6" opacity=".85"/>
-          <circle cx="250" cy="200" r="95" fill="none" stroke="var(--navy)" stroke-width="1.6" opacity=".9"/>
-          <circle cx="250" cy="200" r="50" fill="var(--plum)"/>
-          <text x="250" y="196" text-anchor="middle" fill="#fff" font-family="var(--font-sans)" font-weight="600" font-size="12">Task:</text>
-          <text x="250" y="212" text-anchor="middle" fill="#e3d9ef" font-family="var(--font-sans)" font-size="10.5">complete the form</text>
-
-          <text x="250" y="82" text-anchor="middle" fill="var(--navy)" font-family="var(--font-sans)" font-weight="600" font-size="12">No data retention</text>
-          <text x="250" y="38" text-anchor="middle" fill="var(--ink)" font-family="var(--font-sans)" font-weight="600" font-size="12">No submit path</text>
-          <text x="250" y="382" text-anchor="middle" fill="var(--teal-deep)" font-family="var(--font-sans)" font-weight="600" font-size="12">Human oversight</text>
-          <text x="250" y="128" text-anchor="middle" fill="var(--gold)" font-family="var(--font-sans)" font-weight="700" font-size="11" opacity=".95">session isolation</text>
-        </svg>
-        <p class="diagram-cap">Fig. 5 — every layer sits between the model and a real-world effect on someone's application.</p>
-      </div>
+      <p>That was all validated on Claude Sonnet 4.6 a few months back — we've since moved to newer, more capable
+      releases, wrapped in Vercel's Eve as an execution harness. Eve catches malformed tool calls and retries
+      failed steps, keeping a more improvisational model anchored to the same system-prompt guidance instead of
+      letting it wander off-script.</p>
     </div>
   </section>
 
@@ -634,6 +587,10 @@
     <div class="wrap">
       <p class="eyebrow" style="color:#cdeee7;">Wrap-up</p>
       <h2>Four practices, in one sentence each</h2>
+      <p style="font-family: var(--font-sans); font-size: 14px; color: #cdeee7; margin: -8px 0 20px; max-width: 56ch;">
+        None of these four holds up alone — together, a leaked field, a missed check, or an off-script model still
+        has to get through the rest before it reaches a real submission.
+      </p>
       <ul class="recap">
         <li>The model processes personal data — it never stores or trains on it.</li>
         <li>Every session runs in its own isolated, FedRAMP High-grade environment.</li>
