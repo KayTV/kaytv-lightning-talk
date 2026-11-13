@@ -362,7 +362,7 @@
     </div>
     <div class="wrap">
       <div class="diagram-box">
-        <svg viewBox="0 0 680 200" role="img" aria-label="Diagram of a case record flowing through Google Cloud Gemini Enterprise, which enforces no data retention, into Claude Sonnet 4.6, which reads a field and writes it once with nothing kept afterward">
+        <svg viewBox="0 0 680 200" role="img" aria-label="Diagram of a case record flowing through Google Cloud Gemini Enterprise, which enforces no data retention, into Claude Opus 4.7, which reads a field and writes it once with nothing kept afterward">
           <g font-family="var(--font-sans)" font-size="12">
             <rect x="10" y="66" width="130" height="68" rx="9" fill="var(--paper)" stroke="var(--line)" stroke-width="1.5"/>
             <text x="75" y="92" text-anchor="middle" fill="var(--ink)" font-weight="600">Case record</text>
@@ -374,7 +374,7 @@
             <text x="260" y="115" text-anchor="middle" fill="var(--muted)" font-size="10.5">no retention · enforced</text>
 
             <rect x="380" y="66" width="150" height="68" rx="9" fill="var(--plum)"/>
-            <text x="455" y="92" text-anchor="middle" fill="#fff" font-weight="600">Claude Sonnet 4.6</text>
+            <text x="455" y="92" text-anchor="middle" fill="#fff" font-weight="600">Claude Opus 4.7</text>
             <text x="455" y="108" text-anchor="middle" fill="#e3d9ef" font-size="10.5">reads field, forgets it</text>
 
             <rect x="570" y="66" width="100" height="68" rx="9" fill="var(--paper)" stroke="var(--teal)" stroke-width="1.5"/>
@@ -575,18 +575,42 @@
   <section class="beat" id="s-model-update">
     <div class="wrap">
       <p class="eyebrow">Since the pilot</p>
-      <h2>Newer models, held to the same rules</h2>
-      <p>That was all validated on Claude Sonnet 4.6 a few months back — we've since moved to newer, more capable
-      releases, wrapped in Vercel's Eve as an execution harness. Eve catches malformed tool calls and retries
-      failed steps, keeping a more improvisational model anchored to the same system-prompt guidance instead of
-      letting it wander off-script.</p>
+      <h2>Security held. Reliability didn't.</h2>
+      <p class="lede">Production surfaced problems the pilot never caught: one four-page prompt of edge-case rules
+      where fixing one issue broke another, custom context compaction that lost track of earlier steps on long
+      forms, and a lock-in to Claude Opus 4.7 that left no room to adapt when it struggled.</p>
+      <p>We're now testing Vercel's Eve, an open-source execution harness, to fix all three.</p>
+      <ul class="points">
+        <li><b>Reusable skills and tools</b> — smaller, focused instructions instead of one giant prompt.</li>
+        <li><b>Built-in memory and subagents</b> — Eve compacts context on its own and hands smaller tasks to
+        subagents.</li>
+        <li><b>Freedom to switch models</b> — Eve decouples the app from any one model, instead of locking it to
+        Opus 4.7.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="beat" id="s-monitoring">
+    <div class="wrap">
+      <p class="eyebrow">Since the pilot</p>
+      <h2>Test every change, then monitor every run</h2>
+      <p class="lede">Reliability upgrades still have to clear the same security bar — so every change runs in a
+      sandbox before it ever reaches a real caseworker's session.</p>
+      <ul class="points">
+        <li><b>Sandbox testing</b> — every model or prompt change runs in Eve's sandbox before it reaches
+        production.</li>
+        <li><b>Braintrust monitoring</b> — tracks each session's outputs and runs, surfacing exactly where the
+        agent fails.</li>
+        <li><b>44–85% cheaper</b> — in one experiment, running benefit applications through Eve and monitoring
+        them in Braintrust cut costs by that much.</li>
+      </ul>
     </div>
   </section>
 
   <section class="closing" id="s-close">
     <div class="wrap">
       <p class="eyebrow" style="color:#cdeee7;">Wrap-up</p>
-      <h2>Four practices, in one sentence each</h2>
+      <h2>Four layers, kept reliable by testing</h2>
       <p style="font-family: var(--font-sans); font-size: 14px; color: #cdeee7; margin: -8px 0 20px; max-width: 56ch;">
         None of these four holds up alone — together, a leaked field, a missed check, or an off-script model still
         has to get through the rest before it reaches a real submission.
@@ -597,6 +621,10 @@
         <li>The agent has no way to submit a form — only to prepare it for review.</li>
         <li>A caseworker watches, can take over anytime, and reviews every field's source.</li>
       </ul>
+      <p style="font-family: var(--font-sans); font-size: 14px; color: #cdeee7; margin: -8px 0 20px; max-width: 56ch;">
+        <strong style="color:#f2eef5;">Underneath all four:</strong> sandbox testing and Braintrust monitoring keep
+        every layer reliable as models and prompts change.
+      </p>
       <p style="font-family: var(--font-sans); font-size: 14px; color: #cdeee7; margin: -8px 0 28px;">
         Result: 0 privacy or security incidents and 67% caseworker trust across a six-month pilot with Riverside County.
       </p>
@@ -604,6 +632,8 @@
         <a href="https://github.com/navapbc/labs-form-filling-assistant">GitHub repo ↗</a>
         <a href="https://www.navapbc.com/toolkits/adapt-agentic-ai-caseworkers">Toolkit: adapting agentic AI for caseworkers ↗</a>
         <a href="https://www.navapbc.com/labs/caseworker-ai-tools/form-filling-assistant">Project page ↗</a>
+        <a href="https://fieldnotes.navapbc.com/p/cut-agentic-ai-costs-vercel-eve">Field Notes: cutting costs 44–85% with Vercel's Eve ↗</a>
+        <a href="https://fieldnotes.navapbc.com/p/jev-agentic-ai-cheaper-faster">Field Notes: cutting costs further with TypeSafe's Jev ↗</a>
       </div>
     </div>
   </section>
